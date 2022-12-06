@@ -38,7 +38,7 @@ The application is used like any ChRIS app.  You specify a folder holding the or
         -v $(pwd)/in:/incoming \
         -v $(pwd)/out:/outgoing \
         --privileged \
-        metadata_burn /incoming /outgoing --text-size=15 -quadrant="bottom-left"
+        metadata_burn /incoming /outgoing --text-size=15 --quadrant="bottom-left"
 
     podman run --rm fnndsc/pl-metadata-burn metadata_burn
         [-h|--help]
