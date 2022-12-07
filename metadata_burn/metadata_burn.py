@@ -151,7 +151,7 @@ class Metadata_burn(ChrisApp):
             "-f",
             "--fields-to-burn",
             dest="fields",
-            default="PatientName, PatientID, PatientBirthDate, PatientPosition",
+            default="PatientName, PatientID, PatientBirthDate, PatientPosition, AccessionNumber",
             optional=True,
             type=str,
             help="Comma separated fields to burn into final PNG",
@@ -179,7 +179,7 @@ class Metadata_burn(ChrisApp):
             "-t",
             "--text-size",
             dest="size",
-            default=25,
+            default=35,
             optional=True,
             type=int,
             help="Size of text as a percent of the image size",
@@ -194,6 +194,14 @@ class Metadata_burn(ChrisApp):
 
         for file in os.listdir(options.inputdir):
             input_file = os.path.join(options.inputdir, file)
+            print([
+                    "med2image",
+                    f"--inputFile={input_file}",
+                    f"--outputDir=/tmp/{file}",
+                    "--outputFileType=png",
+                    f"--outputFileStem={file.rsplit('.', 1)[0]}",
+                    f"--convertOnlySingleDICOM",
+                ])
             subprocess.run(
                 [
                     "med2image",
@@ -201,6 +209,7 @@ class Metadata_burn(ChrisApp):
                     f"--outputDir=/tmp/{file}",
                     "--outputFileType=png",
                     f"--outputFileStem={file.rsplit('.', 1)[0]}",
+                    f"--convertOnlySingleDICOM",
                 ],
                 check=True,
             )
@@ -225,9 +234,14 @@ class Metadata_burn(ChrisApp):
             # Commence the burn
             for converted_file in os.listdir(f"/tmp/{file}"):
                 if converted_file == "metadata.json":
-                    break
+                    continue
                 img = Image.open(f"/tmp/{file}/{converted_file}")
+                # print the shape of img
+                if img.size[0] < 512 or img.size[1] < 512: # resize the image so that the shorter side is 512 pixels
+                    ratio = max(img.size[0], img.size[1]) / 512
+                    img = img.resize((int(img.size[0] / ratio), int(img.size[0] / ratio)))
                 burn_string = ""
+                options.fields = options.fields.replace(" ", "")
                 for field in options.fields.split(","):
                     burn_string = (
                         f"{burn_string}{field}: {metadata[field.strip()]}\n".strip(" ")
@@ -250,10 +264,10 @@ class Metadata_burn(ChrisApp):
                     )
                 test = draw.multiline_textsize(burn_string, font=font)
                 if options.quadrant == "bottom-right":
-                    x = img_size[0] - test[0]
+                    x = img_size[0] - test[0] - 5
                     y = img_size[1] - test[1]
                 elif options.quadrant == "top-right":
-                    x = img_size[0] - test[0]
+                    x = img_size[0] - test[0] - 5
                     y = 2
                 elif options.quadrant == "top-left":
                     x = 2
